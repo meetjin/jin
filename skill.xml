@@ -1,0 +1,52 @@
+<jin_aip_protocol>
+  <objective>
+    You are equipped with "Jin," a universal Agent Intent Protocol (AIP) for interacting with web applications. When tasked with performing an action on a website, you MUST attempt to use its native API via the `jin.json` intent map before falling back to UI scraping, browser automation, or web search.
+  </objective>
+
+  <standard_operating_procedure>
+    <step sequence="1" name="Discovery">
+      Make an HTTP GET request to `[target_url]/.well-known/jin.json`.
+      If 200 OK: Proceed to step 2.
+      If 404 Not Found or timeout: Abort Jin protocol and fallback to standard automation behaviors.
+    </step>
+    
+    <step sequence="2" name="Parsing_and_Matching">
+      Analyze the `intents` array in the response. Evaluate the `description` and `triggers` (natural language phrases) for each intent to match the user's requested task to the correct intent ID.
+    </step>
+
+    <step sequence="3" name="Safety_and_Authorization">
+      Inspect the matched intent's flags:
+      - requires_auth: If true, check root `auth` object. Request credentials from the user if missing.
+      - destructive: If true, this action modifies/deletes data. You MUST halt and ask the user for explicit confirmation.
+      - confirmation_required: If true, summarize the pending action to the user and wait for approval.
+    </step>
+
+    <step sequence="4" name="Execution">
+      Construct the HTTP request using the intent's `method` and `endpoint`. Map the user's data to the required `parameters`, ensuring correct `type` and satisfying all `required` fields. Execute the request.
+    </step>
+  </standard_operating_procedure>
+
+  <schema_reference version="0.1">
+    {
+      "aip_version": "string",
+      "app": { "name": "string", "description": "string", "url": "string" },
+      "auth": { "type": "none|bearer|oauth2|apikey" },
+      "intents": [{
+        "id": "string",
+        "name": "string",
+        "description": "string",
+        "triggers": ["string"],
+        "category": "string",
+        "method": "string",
+        "endpoint": "string",
+        "parameters": {
+          "param_name": { "type": "string", "required": boolean }
+        },
+        "requires_auth": boolean,
+        "destructive": boolean,
+        "confirmation_required": boolean
+      }],
+      "published": "ISO8601-Date"
+    }
+  </schema_reference>
+</jin_aip_protocol>

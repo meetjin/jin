@@ -1,0 +1,26 @@
+{
+  "type": "function",
+  "function": {
+    "name": "execute_jin_protocol",
+    "description": "Discovers and executes actions on a target website using the Jin Agent Intent Protocol (AIP). Always use this tool first when a user asks to interact with a specific web application or API.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "target_url": {
+          "type": "string",
+          "description": "The base URL of the application the user wants to interact with (e.g., https://api.open-meteo.com)."
+        },
+        "user_intent": {
+          "type": "string",
+          "description": "The natural language description of what the user wants to accomplish on the site (e.g., 'Get the current weather for Tokyo')."
+        },
+        "provided_parameters": {
+          "type": "object",
+          "description": "Any specific data points or parameters the user provided in their prompt that should be passed to the intent.",
+          "additionalProperties": true
+        }
+      },
+      "required": ["target_url", "user_intent"]
+    }
+  }
+}
