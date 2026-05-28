@@ -42,6 +42,17 @@ This file — `jin.json` — is to AI agents what `sitemap.xml` is to search eng
 
 ---
 
+## 🚀 New in v0.2.0
+
+Version `0.2.0` is an all-inclusive framework update adding support for ten major backend ecosystems, deep OpenAPI spec crawlers, and advanced parameter normalizations:
+
+* **10 New Framework Scanners**: Out-of-the-box static route extraction for **FastAPI**, **Django REST Framework**, **Flask**, **Laravel**, **Ruby on Rails**, **Fastify**, **Hono**, **NestJS**, **tRPC**, and **OpenAPI**.
+* **Stateful Lexical Router Traversal**: Recursively traverses multi-level nested routers (like in tRPC) to generate unified dot-notation endpoint schemas (`/api/trpc/posts.create`).
+* **Recursive Workspace OpenAPI spec discoverer**: Deep crawls your workspace recursively to automatically discover and import OpenAPI/Swagger configurations for any other backend stacks.
+* **Advanced Parameter Normalization**: Automatically converts and maps complex path signatures (including typed path variables, catch-alls, regex filters, and optional parameters) to standard AIP-compliant formats.
+
+---
+
 ## Get started in 3 minutes
 
 ```bash
