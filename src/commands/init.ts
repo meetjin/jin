@@ -8,6 +8,15 @@ import { scanOpenAPI } from '../scanners/openapi'
 import { scanViteReact } from '../scanners/vite-react'
 import { scanSupabaseFunctions } from '../scanners/supabase-functions'
 import { scanDart } from '../scanners/dart'
+import { scanFastAPI } from '../scanners/fastapi'
+import { scanDjango } from '../scanners/django'
+import { scanFlask } from '../scanners/flask'
+import { scanLaravel } from '../scanners/laravel'
+import { scanRails } from '../scanners/rails'
+import { scanFastify } from '../scanners/fastify'
+import { scanHono } from '../scanners/hono'
+import { scanNestJS } from '../scanners/nestjs'
+import { scanTRPC } from '../scanners/trpc'
 import { resolveJinJsonPath, promptUser } from '../utils'
 
 export async function init(cwd: string = process.cwd()) {
@@ -31,7 +40,7 @@ export async function init(cwd: string = process.cwd()) {
       fs.readFileSync(path.join(cwd, 'package.json'), 'utf-8')
     )
   } catch (e) {
-    console.log('   Warning: No package.json found')
+    // No package.json is normal for Python/PHP/Ruby projects
   }
 
   // Detect framework
@@ -90,16 +99,169 @@ export async function init(cwd: string = process.cwd()) {
     console.log(`   Found ${intents.length} edge functions`)
   }
 
-  // Check for existing OpenAPI spec
-  const openApiPaths = ['openapi.json', 'openapi.yaml', 'swagger.json', 'swagger.yaml']
-  for (const p of openApiPaths) {
-    if (fs.existsSync(path.join(cwd, p))) {
-      console.log(`   Detected: OpenAPI spec (${p})`)
-      const intents = await scanOpenAPI(path.join(cwd, p))
+  // Node Frameworks (Fastify, Hono, NestJS, tRPC)
+  if (deps['fastify']) {
+    const intents = await scanFastify(cwd)
+    if (intents.length > 0) {
+      console.log('   Detected: Fastify')
       detectedIntents.push(...intents)
-      console.log(`   Imported ${intents.length} operations`)
+      console.log(`   Found ${intents.length} endpoints`)
     }
   }
+
+  if (deps['hono']) {
+    const intents = await scanHono(cwd)
+    if (intents.length > 0) {
+      console.log('   Detected: Hono')
+      detectedIntents.push(...intents)
+      console.log(`   Found ${intents.length} routes`)
+    }
+  }
+
+  if (deps['@nestjs/core'] || deps['@nestjs/common']) {
+    const intents = await scanNestJS(cwd)
+    if (intents.length > 0) {
+      console.log('   Detected: NestJS')
+      detectedIntents.push(...intents)
+      console.log(`   Found ${intents.length} routes`)
+    }
+  }
+
+  if (deps['@trpc/server'] || deps['@trpc/client']) {
+    const intents = await scanTRPC(cwd)
+    if (intents.length > 0) {
+      console.log('   Detected: tRPC')
+      detectedIntents.push(...intents)
+      console.log(`   Found ${intents.length} procedures`)
+    }
+  }
+
+  // Recursive check helpers for Python, Laravel (PHP), Rails (Ruby)
+  function checkFileTypeExists(dir: string, ext: string): boolean {
+    let entries: string[]
+    try {
+      entries = fs.readdirSync(dir)
+    } catch {
+      return false
+    }
+    for (const entry of entries) {
+      if (entry === 'node_modules' || entry === '.git' || entry === 'venv' || entry === '.venv') continue
+      const fp = path.join(dir, entry)
+      let stat: fs.Stats
+      try {
+        stat = fs.statSync(fp)
+      } catch {
+        continue
+      }
+      if (stat.isDirectory()) {
+        if (checkFileTypeExists(fp, ext)) return true
+      } else if (entry.endsWith(ext)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  // Python Frameworks (FastAPI, Django, Flask)
+  if (checkFileTypeExists(cwd, '.py')) {
+    const fastapiIntents = await scanFastAPI(cwd)
+    if (fastapiIntents.length > 0) {
+      console.log('   Detected: FastAPI (Python)')
+      detectedIntents.push(...fastapiIntents)
+      console.log(`   Found ${fastapiIntents.length} endpoints`)
+    }
+
+    const flaskIntents = await scanFlask(cwd)
+    if (flaskIntents.length > 0) {
+      console.log('   Detected: Flask (Python)')
+      detectedIntents.push(...flaskIntents)
+      console.log(`   Found ${flaskIntents.length} routes`)
+    }
+
+    const djangoIntents = await scanDjango(cwd)
+    if (djangoIntents.length > 0) {
+      console.log('   Detected: Django REST Framework (Python)')
+      detectedIntents.push(...djangoIntents)
+      console.log(`   Found ${djangoIntents.length} endpoints`)
+    }
+  }
+
+  // Laravel (PHP)
+  if (fs.existsSync(path.join(cwd, 'artisan')) || checkFileTypeExists(cwd, '.php')) {
+    const intents = await scanLaravel(cwd)
+    if (intents.length > 0) {
+      console.log('   Detected: Laravel (PHP)')
+      detectedIntents.push(...intents)
+      console.log(`   Found ${intents.length} routes`)
+    }
+  }
+
+  // Ruby on Rails
+  if (fs.existsSync(path.join(cwd, 'Gemfile')) || fs.existsSync(path.join(cwd, 'config/routes.rb'))) {
+    const intents = await scanRails(cwd)
+    if (intents.length > 0) {
+      console.log('   Detected: Ruby on Rails')
+      detectedIntents.push(...intents)
+      console.log(`   Found ${intents.length} routes`)
+    }
+  }
+
+  // Recursive OpenAPI Search
+  function findOpenAPISpecs(dir: string, fileList: string[] = []): string[] {
+    let entries: string[]
+    try {
+      entries = fs.readdirSync(dir)
+    } catch {
+      return fileList
+    }
+
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry)
+
+      if (
+        entry === 'node_modules' ||
+        entry === 'dist' ||
+        entry === '.git' ||
+        entry === '.next' ||
+        entry === 'venv' ||
+        entry === '.venv'
+      ) {
+        continue
+      }
+
+      let stat: fs.Stats
+      try {
+        stat = fs.statSync(fullPath)
+      } catch {
+        continue
+      }
+
+      if (stat.isDirectory()) {
+        findOpenAPISpecs(fullPath, fileList)
+      } else if (
+        entry === 'openapi.json' ||
+        entry === 'openapi.yaml' ||
+        entry === 'openapi.yml' ||
+        entry === 'swagger.json' ||
+        entry === 'swagger.yaml' ||
+        entry === 'swagger.yml'
+      ) {
+        fileList.push(fullPath)
+      }
+    }
+
+    return fileList
+  }
+
+  const openApiSpecs = findOpenAPISpecs(cwd)
+  for (const specPath of openApiSpecs) {
+    const relPath = path.relative(cwd, specPath)
+    console.log(`   Detected: OpenAPI spec (${relPath})`)
+    const intents = await scanOpenAPI(specPath)
+    detectedIntents.push(...intents)
+    console.log(`   Imported ${intents.length} operations`)
+  }
+
 
   console.log('')
 

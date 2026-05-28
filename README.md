@@ -189,14 +189,22 @@ Test 20 real APIs with their AIP intent maps at **[meetjin.com/explore](https://
 
 ### Framework support
 
-| Framework | Status |
-|-----------|--------|
-| Next.js (App + Pages Router) | ✅ Supported |
-| React Router (Vite) | ✅ Supported |
-| Express | ✅ Supported |
-| Supabase Edge Functions | ✅ Supported |
-| FastAPI / Django | 🔄 Coming v0.2 |
-| Rails | 🔄 Coming v0.2 |
+| Framework | Status | Notes |
+|-----------|--------|-------|
+| Next.js (App + Pages Router) | ✅ Supported | Full dynamic route normalization |
+| React Router (Vite) | ✅ Supported | Client-side routing extraction |
+| Express | ✅ Supported | Verb and route matcher extraction |
+| Supabase Edge Functions | ✅ Supported | Edge-native handler scanning |
+| FastAPI (Python) | ✅ Supported | Normalizes typed parameters & catch-alls |
+| Django REST Framework | ✅ Supported | URL paths, `re_path` regexes, and ViewSet routers |
+| Flask (Python) | ✅ Supported | Supports methods lists & verb shortcuts |
+| Laravel (PHP) | ✅ Supported | Direct web/api PHP routes and optional arguments |
+| Ruby on Rails | ✅ Supported | Direct endpoints & resources macros |
+| Fastify (Node) | ✅ Supported | Verbs and explicit `.route` object configuration blocks |
+| Hono (Edge/TS) | ✅ Supported | Removes inline parameter constraint filters |
+| NestJS (Enterprise) | ✅ Supported | Class prefix + method decorators matching |
+| tRPC (TS-Native) | ✅ Supported | Recursive nested router traversal |
+| OpenAPI/Swagger | ✅ Supported | **Recursive spec finder** covering other architectures |
 
 ---
 
@@ -261,13 +269,12 @@ AIP is not a replacement for OpenAPI. It is a companion standard — optimised f
 ## Roadmap
 
 ```
-v0.1 (now)        Core spec, CLI, registry, explore page
-v0.2 (Month 2)    @papercargo/jin-shield — scraper protection
+v0.1              Core spec, CLI, registry, explore page
+v0.2 (now)        Next-Gen backend framework support (10+ scanners)
+                  Recursive workspace OpenAPI spec discoverer
+v0.3 (Month 3)    @papercargo/jin-shield — scraper protection
                   Streaming intents, multi-step flows
-                  FastAPI, Django, Rails scanners
-v0.3 (Month 3)    Key Protocol — cryptographic agent sessions
-                  Replay-proof session keys
-                  Tamper-evident issuance log
+                  Key Protocol — cryptographic agent sessions
 v1.0 (2027)       Stable spec — no breaking changes
                   AIP working group formally established
                   Standards body submission
