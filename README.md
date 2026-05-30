@@ -4,12 +4,13 @@
 
 # Jin
 
-### The open standard that makes the web readable for AI agents.
+### The open infrastructure standard for the agentic web. 
+**A dual-sided protocol for machine-readable routing (`jin.json`) and zero-latency perimeter security.**
 
+[![npm downloads](https://img.shields.io/npm/dw/@papercargo/jin-cli?style=flat-square&color=emerald)](https://www.npmjs.com/package/@papercargo/jin-cli)
 [![AIP Version](https://img.shields.io/badge/AIP-v0.1%20Open%20Draft-6366f1?style=flat-square)](https://meetjin.com/spec)
 [![npm](https://img.shields.io/npm/v/@papercargo/jin-cli?style=flat-square&color=6366f1)](https://www.npmjs.com/package/@papercargo/jin-cli)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-6366f1?style=flat-square)](LICENSE)
-[![Spec License: CC0](https://img.shields.io/badge/Spec-CC0%20Public%20Domain-6366f1?style=flat-square)](LICENSE-SPEC)
 [![Registry](https://img.shields.io/badge/Registry-meetjin.com-6366f1?style=flat-square)](https://meetjin.com/registry)
 
 **[Registry](https://meetjin.com/registry) · [Explore](https://meetjin.com/explore) · [Spec](https://meetjin.com/spec) · [Publish your app](https://meetjin.com)**
@@ -78,6 +79,27 @@ Your app is now cryptographically secured and discoverable by every compliant AI
 ---
 
 ## 🛡️ Jin Shield Security Perimeter
+
+### The "Take It or Leave It" Boundary
+Jin Shield flips the scraping paradigm by enforcing a strict protocol boundary before requests ever touch your controllers.
+
+```text
+[ Incoming Request ]
+         │
+         ▼
+ ┌───────────────┐
+ │  Jin Shield   │ ◄─── Cross-references JWKS public keys in-memory
+ └───────┬───────┘
+         │
+         ├─► [ Verified Jin Agent ] ──► (200 OK) Native millisecond execution
+         │
+         └─► [ Unverified Scraper ] ──► (403 Forbidden) "Read jin.json or leave."
+```
+[Test A] Simulating Rogue Scraper hitting protected route...
+✓ [Test A SUCCESS] Scraper blocked immediately by Jin Shield gateway boundary!
+
+[Test B] Simulating verified Jin Agent with cryptographic passport...
+✓ [Test B SUCCESS] Verified Jin Agent passed cryptographic check and accessed route!
 
 Once you have declared your app capabilities, you can activate the **Jin Shield** trust perimeter to protect your backend gateway. It intercepts incoming traffic, verifies cryptographic agent passports, and blocks rogue, non-compliant scrapers while passing verified AI agents that match your local `jin.json` specification.
 
@@ -303,6 +325,14 @@ The spec covers:
 AIP is not a replacement for OpenAPI. It is a companion standard — optimised for machine consumption, natural language matching, and agent discovery.
 
 ---
+
+## The Sovereign Agentic Economy (Why we are building this)
+
+Jin is designed to replace hostile, brute-force web scraping platforms with a cooperative, high-speed economic standard.
+
+1. **Webmaster Sovereignty:** For years, websites have been forced to fight AI scrapers draining their servers. Jin gives webmasters their power back. With `jin shield`, you dictate exactly what AI agents can see and do. If it isn't in your `jin.json`, it doesn't exist to the bot.
+2. **Agentic Determinism:** LLMs naturally prefer the path of least compute. By providing a clean `jin.json` map, AI swarms bypass heavy, hallucination-prone DOM scraping and execute deterministic API calls in milliseconds.
+3. **Layer 4 Settlement (Upcoming):** Jin is laying the groundwork for decentralized API monetization. Soon, webmasters will be able to gate premium endpoints in their `jin.json`, allowing verified agents to natively pay micro-transactions for data access. No middlemen, no expensive scraping platform subscriptions—just direct machine-to-machine commerce.
 
 ## Roadmap
 
