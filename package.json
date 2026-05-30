@@ -1,6 +1,6 @@
 {
   "name": "@papercargo/jin-cli",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Agent Intent Protocol — make your app agent-ready in minutes",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -11,7 +11,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node -e \"const fs = require('fs'); fs.cpSync('src/crypto', 'dist/crypto', { recursive: true });\"",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "prepublishOnly": "npm run build"
   },

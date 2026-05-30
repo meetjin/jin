@@ -6,23 +6,30 @@ import { validateAndPrint } from './commands/validate'
 import { publish } from './commands/publish'
 import { serve } from './commands/serve'
 import { watch } from './commands/watch'
+import { shield } from './commands/shield'
 
 const program = new Command()
 
 program
   .name('jin')
   .description('Agent Intent Protocol — make your app agent-ready')
-  .version('0.2.1')
+  .version('0.2.2')
 
 program
   .command('init')
   .description('Scan your codebase and generate a jin.json scaffold')
-  .action(() => init(process.cwd()))
+  .action(async () => {
+    await init(process.cwd());
+    process.exit(0);
+  })
 
 program
   .command('validate')
   .description('Validate your jin.json against the AIP specification')
-  .action(() => validateAndPrint(process.cwd()))
+  .action(async () => {
+    await validateAndPrint(process.cwd());
+    process.exit(0);
+  })
 
 program
   .command('serve')
@@ -40,5 +47,13 @@ program
   .command('watch')
   .description('Watch your codebase and update jin.json automatically')
   .action(() => watch(process.cwd()))
+
+program
+  .command('shield')
+  .description('Activate the Jin Shield security boundary for your server')
+  .action(async () => {
+    await shield(process.cwd());
+    process.exit(0);
+  })
 
 program.parse()

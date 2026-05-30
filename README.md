@@ -42,13 +42,14 @@ This file — `jin.json` — is to AI agents what `sitemap.xml` is to search eng
 
 ---
 
-## 🚀 New in v0.2.0
+## 🚀 New in v0.2.2
 
-Version `0.2.0` is an all-inclusive framework update adding support for ten major backend ecosystems, deep OpenAPI spec crawlers, and advanced parameter normalizations:
+Version `0.2.2` is an all-inclusive framework and security update adding the **Jin Shield** cryptographic gateway boundary, support for ten major backend ecosystems, deep OpenAPI spec crawlers, and advanced parameter normalizations:
 
+* **🛡️ Universal Jin Shield Security Perimeter**: Active gateway boundary protecting your endpoints against rogue scrapers. Auto-scans your workspace to generate zero-hop, in-memory RS256 token verification middlewares and guards for Express, Next.js, Hono, Fastify, NestJS, tRPC, FastAPI, Django, Flask, Laravel, and Rails.
 * **10 New Framework Scanners**: Out-of-the-box static route extraction for **FastAPI**, **Django REST Framework**, **Flask**, **Laravel**, **Ruby on Rails**, **Fastify**, **Hono**, **NestJS**, **tRPC**, and **OpenAPI**.
 * **Stateful Lexical Router Traversal**: Recursively traverses multi-level nested routers (like in tRPC) to generate unified dot-notation endpoint schemas (`/api/trpc/posts.create`).
-* **Recursive Workspace OpenAPI spec discoverer**: Deep crawls your workspace recursively to automatically discover and import OpenAPI/Swagger configurations for any other backend stacks.
+* **Recursive Workspace OpenAPI Spec Discoverer**: Deep crawls your workspace recursively to automatically discover and import OpenAPI/Swagger configurations for any other backend stacks.
 * **Advanced Parameter Normalization**: Automatically converts and maps complex path signatures (including typed path variables, catch-alls, regex filters, and optional parameters) to standard AIP-compliant formats.
 
 ---
@@ -65,11 +66,36 @@ npx @papercargo/jin-cli init
 # 3. Validate
 npx @papercargo/jin-cli validate
 
-# 4. Publish to the registry
+# 4. Activate the security shield
+npx @papercargo/jin-cli shield
+
+# 5. Publish to the registry
 npx @papercargo/jin-cli publish
 ```
 
-Your app is now discoverable by every AI agent in the world.
+Your app is now cryptographically secured and discoverable by every compliant AI agent in the world.
+
+---
+
+## 🛡️ Jin Shield Security Perimeter
+
+Once you have declared your app capabilities, you can activate the **Jin Shield** trust perimeter to protect your backend gateway. It intercepts incoming traffic, verifies cryptographic agent passports, and blocks rogue, non-compliant scrapers while passing verified AI agents that match your local `jin.json` specification.
+
+### Key Features:
+* **Zero-Latency (In-Memory Verification)**: Resolves rotated public keys from `meetjin.com` once upon server boot and caches them. All signatures are verified locally in-memory via asymmetric RS256, eliminating per-request network hops.
+* **Exact Intent Routing**: Decodes agent identity tokens and asserts that the `intent_id` claim matches the requested path and method declared in your local `jin.json`.
+* **12 Framework Adapters**: The CLI automatically scans your project and generates self-contained native adapters for:
+  * **JavaScript/TypeScript**: Express, Next.js (App & Pages Routers), Hono, Fastify, NestJS Guards, and tRPC.
+  * **Python**: FastAPI, Flask, and Django.
+  * **Enterprise Blueprints**: PHP Laravel and Ruby on Rails.
+* **Basic Metrics**: Track active execution counters in-memory.
+* **Strict Fallback boundary**: Short-circuits unauthorized agent hits or rogue scrapers with an HTTP 403 Forbidden, pointing them directly to the server's `/.well-known/jin.json` protocol map ("take it or leave it").
+
+To activate the shield inside your codebase:
+```bash
+npx @papercargo/jin-cli shield
+```
+Follow the generated framework-specific setup logs to wire it up!
 
 ---
 
@@ -196,6 +222,7 @@ Test 20 real APIs with their AIP intent maps at **[meetjin.com/explore](https://
 | `jin init` | Scan codebase, generate `jin.json` scaffold |
 | `jin validate` | Validate against AIP spec |
 | `jin serve` | Serve locally at `/.well-known/jin.json` |
+| `jin shield` | Activate the universal Jin Shield security perimeter |
 | `jin publish` | Deploy and register with meetjin.com |
 
 ### Framework support
@@ -281,10 +308,10 @@ AIP is not a replacement for OpenAPI. It is a companion standard — optimised f
 
 ```
 v0.1              Core spec, CLI, registry, explore page
-v0.2 (now)        Next-Gen backend framework support (10+ scanners)
+v0.2              Next-Gen backend framework support (10+ scanners)
                   Recursive workspace OpenAPI spec discoverer
-v0.3 (Month 3)    @papercargo/jin-shield — scraper protection
-                  Streaming intents, multi-step flows
+v0.2.2 (now)      @papercargo/jin-shield — scraper protection (asymmetric RS256 JWT, zero-hop)
+v0.3 (Month 3)    Streaming intents, multi-step flows
                   Key Protocol — cryptographic agent sessions
 v1.0 (2027)       Stable spec — no breaking changes
                   AIP working group formally established
