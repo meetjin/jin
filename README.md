@@ -43,9 +43,9 @@ This file — `jin.json` — is to AI agents what `sitemap.xml` is to search eng
 
 ---
 
-## 🚀 New in v0.2.2
+## 🚀 New in v0.2.3
 
-Version `0.2.2` is an all-inclusive framework and security update adding the **Jin Shield** cryptographic gateway boundary, support for ten major backend ecosystems, deep OpenAPI spec crawlers, and advanced parameter normalizations:
+Version `0.2.3` is an all-inclusive framework and security update adding the **Jin Shield** cryptographic gateway boundary, support for ten major backend ecosystems, deep OpenAPI spec crawlers, and advanced parameter normalizations:
 
 * **🛡️ Universal Jin Shield Security Perimeter**: Active gateway boundary protecting your endpoints against rogue scrapers. Auto-scans your workspace to generate zero-hop, in-memory RS256 token verification middlewares and guards for Express, Next.js, Hono, Fastify, NestJS, tRPC, FastAPI, Django, Flask, Laravel, and Rails.
 * **10 New Framework Scanners**: Out-of-the-box static route extraction for **FastAPI**, **Django REST Framework**, **Flask**, **Laravel**, **Ruby on Rails**, **Fastify**, **Hono**, **NestJS**, **tRPC**, and **OpenAPI**.
@@ -344,7 +344,7 @@ Jin is designed to replace hostile, brute-force web scraping platforms with a co
 v0.1              Core spec, CLI, registry, explore page
 v0.2              Next-Gen backend framework support (10+ scanners)
                   Recursive workspace OpenAPI spec discoverer
-v0.2.2 (now)      @papercargo/jin-shield — scraper protection (asymmetric RS256 JWT, zero-hop)
+v0.2.3 (now)      @papercargo/jin-shield — scraper protection (asymmetric RS256 JWT, zero-hop)
 v0.3 (Month 3)    Streaming intents, multi-step flows
                   Key Protocol — cryptographic agent sessions
 v1.0 (2027)       Stable spec — no breaking changes
