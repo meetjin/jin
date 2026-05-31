@@ -4,6 +4,7 @@ import https from 'https'
 import crypto from 'crypto'
 import http from 'http'
 import { IncomingMessage, ServerResponse } from 'http'
+import jwt from 'jsonwebtoken'
 
 // Interfaces & Types
 export interface JinShieldStats {
@@ -196,9 +197,13 @@ export async function verifyJinToken(
       return { success: false, error: 'Empty identity token' };
     }
 
-    // 2. Decode JWT structure
-    const { header, payload, signature, signedInput } = decodeJwt(token);
+    // 2. Decode JWT structure to read kid from unverified header
+    const decoded = jwt.decode(token, { complete: true });
+    if (!decoded || !decoded.header) {
+      return { success: false, error: 'Invalid JWT token format' };
+    }
 
+    const header = decoded.header;
     if (header.alg !== 'RS256') {
       return { success: false, error: 'Unsupported cryptographic algorithm. RS256 is required' };
     }
@@ -208,25 +213,46 @@ export async function verifyJinToken(
       return { success: false, error: 'Missing key ID (kid) in token header' };
     }
 
-    // 3. Query cached keys
-    const keys = await getJwksKeys(jwksUrl);
-    const matchingJwk = keys.find((k) => k.kid === kid);
+    // 3. Query cached keys with key-rotation handling
+    let keys = await getJwksKeys(jwksUrl);
+    let matchingJwk = keys.find((k) => k.kid === kid);
+    if (!matchingJwk) {
+      // kid is missing from local cache, briefly re-fetch the JWKS to handle key rotation
+      cachedKeys = null;
+      fetchingPromise = null;
+      keys = await getJwksKeys(jwksUrl);
+      matchingJwk = keys.find((k) => k.kid === kid);
+    }
+
     if (!matchingJwk) {
       return { success: false, error: 'Signatory key ID not recognized by meetjin.com' };
     }
 
-    // 4. Asymmetric signature verification
-    const isSignatureValid = verifySignature(signedInput, signature, matchingJwk);
-    if (!isSignatureValid) {
-      return { success: false, error: 'Invalid cryptographic passport signature' };
+    // 4. Cryptographically verify the RS256 signature using the cached public key
+    const publicKey = crypto.createPublicKey({
+      key: {
+        kty: 'RSA',
+        n: matchingJwk.n,
+        e: matchingJwk.e,
+        alg: 'RS256',
+        use: 'sig'
+      },
+      format: 'jwk'
+    });
+
+    let payload: any;
+    try {
+      payload = jwt.verify(token, publicKey, {
+        algorithms: ['RS256']
+      });
+    } catch (err: any) {
+      if (err.name === 'TokenExpiredError') {
+        return { success: false, error: 'Identity passport has expired' };
+      }
+      return { success: false, error: `Invalid cryptographic passport signature: ${err.message}` };
     }
 
-    // 5. Claim Checks
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) {
-      return { success: false, error: 'Identity passport has expired' };
-    }
-
+    // 5. Assert that iss === "meetjin.com" (or https://meetjin.com) and the token is not expired (checked above)
     const verifiedIssuer = payload.iss === 'meetjin.com' || payload.iss === 'https://meetjin.com';
     if (!verifiedIssuer) {
       return { success: false, error: 'Untrusted token issuer' };

@@ -17,6 +17,14 @@ cached_keys: Optional[List[Dict[str, Any]]] = None
 fetching_lock = asyncio.Lock()
 JWKS_URL = "https://meetjin.com/.well-known/jwks.json"
 
+# PyJWKClient cache
+jwk_clients: Dict[str, jwt.PyJWKClient] = {}
+
+def get_jwk_client(jwks_url: str = JWKS_URL) -> jwt.PyJWKClient:
+    if jwks_url not in jwk_clients:
+        jwk_clients[jwks_url] = jwt.PyJWKClient(jwks_url)
+    return jwk_clients[jwks_url]
+
 # In-memory atomic request statistics tracking
 shield_stats = {
     "active_requests": 0,
@@ -167,54 +175,28 @@ class JinShieldMiddleware(BaseHTTPMiddleware):
             return create_forbidden_response("Empty identity token")
 
         try:
-            # 5. Extract header claims from token for checking
-            unverified_header = jwt.get_unverified_header(token)
-            alg = unverified_header.get("alg")
-            if alg != "RS256":
-                return create_forbidden_response("Unsupported cryptographic algorithm. RS256 is required")
-
-            kid = unverified_header.get("kid")
-            if not kid:
-                return create_forbidden_response("Missing key ID (kid) in token header")
-
-            # 6. Fetch JWKS keys (in-memory lookup)
-            keys = await get_jwks_keys(self.jwks_url)
-            matching_jwk = None
-            for key in keys:
-                if key.get("kid") == kid:
-                    matching_jwk = key
-                    break
-
-            if not matching_jwk:
-                return create_forbidden_response("Signatory key ID not recognized by meetjin.com")
-
-            # 7. Asymmetric signature & claim verification locally using PyJWT
-            public_key = RSAAlgorithm.from_jwk(matching_jwk)
+            # 5. Retrieve key and verify the token using PyJWKClient
+            jwk_client = get_jwk_client(self.jwks_url)
+            signing_key = jwk_client.get_signing_key_from_jwt(token)
             
             try:
                 payload = jwt.decode(
                     token,
-                    public_key,
+                    signing_key.key,
                     algorithms=["RS256"],
-                    options={
-                        "verify_aud": False,  # meetjin audience verified manually
-                        "verify_iss": False,  # issuer verified manually
-                        "verify_exp": True    # verify expiration automatically
-                    }
+                    issuer="meetjin.com",
+                    options={"verify_aud": False}
                 )
             except jwt.ExpiredSignatureError:
                 return create_forbidden_response("Identity passport has expired")
             except jwt.InvalidSignatureError:
                 return create_forbidden_response("Invalid cryptographic passport signature")
+            except jwt.InvalidIssuerError:
+                return create_forbidden_response("Untrusted token issuer")
             except Exception as e:
                 return create_forbidden_response(f"Cryptographic validation failed: {str(e)}")
 
-            # 8. Check Issuer claim
-            issuer = payload.get("iss")
-            if issuer not in ("meetjin.com", "https://meetjin.com"):
-                return create_forbidden_response("Untrusted token issuer")
-
-            # 9. Intent Alignment and project jin.json verification
+            # 8. Check intent_id
             intent_id = payload.get("intent_id")
             if not intent_id:
                 return create_forbidden_response("Missing intent_id claim in identity payload")
@@ -229,7 +211,7 @@ class JinShieldMiddleware(BaseHTTPMiddleware):
                     f"Identity passport is authorized for intent '{intent_id}', but requested endpoint requires intent '{matched_intent.get('id')}'"
                 )
 
-            # 10. Atomic tracking counts
+            # 9. Atomic tracking counts
             shield_stats["total_requests"] += 1
             shield_stats["active_requests"] += 1
 

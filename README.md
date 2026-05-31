@@ -104,14 +104,18 @@ Jin Shield flips the scraping paradigm by enforcing a strict protocol boundary b
 Once you have declared your app capabilities, you can activate the **Jin Shield** trust perimeter to protect your backend gateway. It intercepts incoming traffic, verifies cryptographic agent passports, and blocks rogue, non-compliant scrapers while passing verified AI agents that match your local `jin.json` specification.
 
 ### Key Features:
-* **Zero-Latency (In-Memory Verification)**: Resolves rotated public keys from `meetjin.com` once upon server boot and caches them. All signatures are verified locally in-memory via asymmetric RS256, eliminating per-request network hops.
-* **Exact Intent Routing**: Decodes agent identity tokens and asserts that the `intent_id` claim matches the requested path and method declared in your local `jin.json`.
+* **🛡️ Decentralized IdP Pattern (Strictly Local Verification)**: The shield never makes database queries or external network hops to check a developer's API key. It strictly validates RS256 JWT agent passports locally in-memory using cached Public Keys.
+* **🔑 In-Memory JWKS Caching & Automatic Key Rotation**: JWKS public keys are fetched from `meetjin.com` once on server boot and cached in-memory. If a key ID (`kid`) is not recognized in the local cache, the shield briefly re-fetches the JWKS keys automatically to handle rotated keys without downtime.
+* **⚡ Cryptographically Hardened Engines**: Fully integrated with industry-standard, high-performance packages:
+  * **TypeScript/Node**: Leverages `jsonwebtoken` for secure cryptographic checks.
+  * **Python**: Uses `PyJWT` and `PyJWKClient` for automatic, highly optimized key caching and validation.
+* **🎯 Exact Intent Routing**: Decodes agent identity tokens and asserts that the `intent_id` claim matches the requested path and method declared in your local `jin.json` route map.
 * **12 Framework Adapters**: The CLI automatically scans your project and generates self-contained native adapters for:
   * **JavaScript/TypeScript**: Express, Next.js (App & Pages Routers), Hono, Fastify, NestJS Guards, and tRPC.
   * **Python**: FastAPI, Flask, and Django.
   * **Enterprise Blueprints**: PHP Laravel and Ruby on Rails.
-* **Basic Metrics**: Track active execution counters in-memory.
-* **Strict Fallback boundary**: Short-circuits unauthorized agent hits or rogue scrapers with an HTTP 403 Forbidden, pointing them directly to the server's `/.well-known/jin.json` protocol map ("take it or leave it").
+* **📊 In-Memory Metrics**: Track active and total execution request counters with zero overhead.
+* **🚪 Strict Fallback Boundary**: Short-circuits unauthorized agent hits or rogue scrapers with an HTTP `403 Forbidden` response immediately, pointing them to `/.well-known/jin.json` ("take it or leave it").
 
 To activate the shield inside your codebase:
 ```bash

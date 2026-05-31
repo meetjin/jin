@@ -114,8 +114,14 @@ async function verifyJinToken(token, method, reqPath, jinJson) {
     }
     const { header, payload, signature, signedInput } = decodeJwt(token);
     if (header.alg !== 'RS256' || !header.kid) throw new Error('Unsupported algorithm or missing kid');
-    const keys = await getJwksKeys();
-    const matchingJwk = keys.find(k => k.kid === header.kid);
+    let keys = await getJwksKeys();
+    let matchingJwk = keys.find(k => k.kid === header.kid);
+    if (!matchingJwk) {
+      cachedKeys = null;
+      fetchingPromise = null;
+      keys = await getJwksKeys();
+      matchingJwk = keys.find(k => k.kid === header.kid);
+    }
     if (!matchingJwk) throw new Error('Signatory key ID not recognized');
     if (!verifySignature(signedInput, signature, matchingJwk)) throw new Error('Invalid cryptographic signature');
     const now = Math.floor(Date.now() / 1000);

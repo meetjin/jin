@@ -21,6 +21,14 @@ cached_keys: Optional[List[Dict[str, Any]]] = None
 fetching_lock = asyncio.Lock()
 JWKS_URL = os.environ.get("JIN_JWKS_URL", "https://meetjin.com/.well-known/jwks.json")
 
+# PyJWKClient cache
+jwk_clients: Dict[str, jwt.PyJWKClient] = {}
+
+def get_jwk_client(jwks_url: str = JWKS_URL) -> jwt.PyJWKClient:
+    if jwks_url not in jwk_clients:
+        jwk_clients[jwks_url] = jwt.PyJWKClient(jwks_url)
+    return jwk_clients[jwks_url]
+
 # Global active execution counters
 shield_stats = {
     "active_requests": 0,
@@ -125,23 +133,13 @@ def verify_jin_token_sync(
     jwks_url: str = JWKS_URL
 ) -> Dict[str, Any]:
     """
-    Core synchronous verification utility checking signature and path/intent claims.
+    Core synchronous verification utility checking signature and path/intent claims using PyJWKClient.
     """
     if not token:
         return {"success": False, "error": "Empty identity token"}
 
     try:
-        # 1. Decode header to identify kid
-        unverified_header = jwt.get_unverified_header(token)
-        alg = unverified_header.get("alg")
-        if alg != "RS256":
-            return {"success": False, "error": "Unsupported algorithm. RS256 is required"}
-
-        kid = unverified_header.get("kid")
-        if not kid:
-            return {"success": False, "error": "Missing kid claim in header"}
-
-        # 2. Match intent inside jin.json
+        # Match intent inside jin.json first
         req_method = method.upper()
         matched_intent = None
         if jin_json and "intents" in jin_json:
@@ -152,38 +150,28 @@ def verify_jin_token_sync(
                     matched_intent = intent
                     break
 
-        # 3. Retrieve JWK key
-        keys = get_jwks_keys_sync(jwks_url)
-        matching_jwk = next((k for k in keys if k.get("kid") == kid), None)
-        if not matching_jwk:
-            return {"success": False, "error": "Signatory key ID not recognized by meetjin.com"}
-
-        # 4. Local asymmetric signature verification
-        public_key = RSAAlgorithm.from_jwk(matching_jwk)
+        # Retrieve the key and verify the token using PyJWKClient
+        jwk_client = get_jwk_client(jwks_url)
+        signing_key = jwk_client.get_signing_key_from_jwt(token)
         
         try:
             payload = jwt.decode(
                 token,
-                public_key,
+                signing_key.key,
                 algorithms=["RS256"],
-                options={
-                    "verify_aud": False,
-                    "verify_iss": False,
-                    "verify_exp": True
-                }
+                issuer="meetjin.com",
+                options={"verify_aud": False}
             )
         except jwt.ExpiredSignatureError:
             return {"success": False, "error": "Identity passport has expired"}
         except jwt.InvalidSignatureError:
             return {"success": False, "error": "Invalid cryptographic passport signature"}
+        except jwt.InvalidIssuerError:
+            return {"success": False, "error": "Untrusted token issuer"}
         except Exception as e:
             return {"success": False, "error": f"Cryptographic verification failed: {e}"}
 
-        # 5. Check claims
-        issuer = payload.get("iss")
-        if issuer not in ("meetjin.com", "https://meetjin.com"):
-            return {"success": False, "error": "Untrusted token issuer"}
-
+        # Check intent alignment
         intent_id = payload.get("intent_id")
         if not intent_id:
             return {"success": False, "error": "Missing intent_id claim in payload"}
@@ -213,80 +201,10 @@ async def verify_jin_token_async(
     jwks_url: str = JWKS_URL
 ) -> Dict[str, Any]:
     """
-    Core asynchronous verification utility checking signature and path/intent claims.
+    Core asynchronous verification utility checking signature and path/intent claims using PyJWKClient.
     """
-    if not token:
-        return {"success": False, "error": "Empty identity token"}
-
-    try:
-        unverified_header = jwt.get_unverified_header(token)
-        alg = unverified_header.get("alg")
-        if alg != "RS256":
-            return {"success": False, "error": "Unsupported algorithm. RS256 is required"}
-
-        kid = unverified_header.get("kid")
-        if not kid:
-            return {"success": False, "error": "Missing kid claim in header"}
-
-        req_method = method.upper()
-        matched_intent = None
-        if jin_json and "intents" in jin_json:
-            for intent in jin_json["intents"]:
-                intent_method = intent.get("method", "GET").upper()
-                intent_endpoint = intent.get("endpoint", "")
-                if intent_method == req_method and match_path(intent_endpoint, req_path):
-                    matched_intent = intent
-                    break
-
-        keys = await get_jwks_keys(jwks_url)
-        matching_jwk = next((k for k in keys if k.get("kid") == kid), None)
-        if not matching_jwk:
-            return {"success": False, "error": "Signatory key ID not recognized by meetjin.com"}
-
-        public_key = RSAAlgorithm.from_jwk(matching_jwk)
-        
-        try:
-            payload = jwt.decode(
-                token,
-                public_key,
-                algorithms=["RS256"],
-                options={
-                    "verify_aud": False,
-                    "verify_iss": False,
-                    "verify_exp": True
-                }
-            )
-        except jwt.ExpiredSignatureError:
-            return {"success": False, "error": "Identity passport has expired"}
-        except jwt.InvalidSignatureError:
-            return {"success": False, "error": "Invalid cryptographic passport signature"}
-        except Exception as e:
-            return {"success": False, "error": f"Cryptographic verification failed: {e}"}
-
-        issuer = payload.get("iss")
-        if issuer not in ("meetjin.com", "https://meetjin.com"):
-            return {"success": False, "error": "Untrusted token issuer"}
-
-        intent_id = payload.get("intent_id")
-        if not intent_id:
-            return {"success": False, "error": "Missing intent_id claim in payload"}
-
-        if not matched_intent:
-            return {
-                "success": False,
-                "error": f"Endpoint {req_method} {req_path} is not declared in the project's jin.json protocol specification"
-            }
-
-        if intent_id != matched_intent.get("id"):
-            return {
-                "success": False,
-                "error": f"Identity authorized for intent '{intent_id}', but requested endpoint requires intent '{matched_intent.get('id')}'"
-            }
-
-        return {"success": True, "payload": payload}
-
-    except Exception as e:
-        return {"success": False, "error": f"Identity validation failed: {str(e)}"}
+    # Since PyJWKClient fetches and caches automatically, we run it directly here.
+    return verify_jin_token_sync(token, method, req_path, jin_json, jwks_url)
 
 # ============================================================================
 # 1. FASTAPI ASGI MIDDLEWARE ADAPTER
