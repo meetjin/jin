@@ -2,6 +2,13 @@
 
 All notable changes to `@papercargo/jin-cli` will be documented in this file.
 
+## [0.2.4] — 2026-06-02
+
+### Added
+- Core `JinShield` class and security request evaluation engine in `src/crypto/jin_core.ts`
+- Zero-network-hop asymmetric cryptographic verification of RS256 Agent Passports using cached JWKS public keys via `jwks-rsa`
+- Asynchronous non-blocking threat telemetry callback (`onThreatDetected`) and request size limit checking
+
 ## [0.2.3] — 2026-05-31
 
 ### Changed

@@ -5,6 +5,8 @@ import crypto from 'crypto'
 import http from 'http'
 import { IncomingMessage, ServerResponse } from 'http'
 import jwt from 'jsonwebtoken'
+import jwksRsa from 'jwks-rsa'
+import { performance } from 'perf_hooks'
 
 // Interfaces & Types
 export interface JinShieldStats {
@@ -16,6 +18,56 @@ export interface VerificationResult {
   success: boolean;
   error?: string;
   payload?: any;
+}
+
+export type ViolationType = 
+  | 'INVALID_SIGNATURE' 
+  | 'PAYLOAD_TOO_LARGE' 
+  | 'THROUGHPUT_LOW' 
+  | 'SCHEMA_MISMATCH'
+  | 'RATE_LIMIT_EXCEEDED';
+
+export interface ThreatIntel {
+  timestamp: number;
+  violationType: ViolationType;
+  ipAddress: string;          
+  agentId?: string;           
+  framework?: string;         
+  userAgent: string;
+  metadata?: Record<string, any>; 
+}
+
+export interface JinShieldSecurityConfig {
+  minThroughputBytesPerSec: number;
+  maxPayloadSizeBytes: number;
+  strictSchemaEnforcement: boolean;
+}
+
+export interface JinShieldOptions {
+  jwksUri: string;
+  audience: string;
+  security: JinShieldSecurityConfig;
+  onThreatDetected?: (intel: ThreatIntel) => void | Promise<void>;
+}
+
+export interface AgentPassport {
+  jti: string;
+  sub: string;
+  iss: string;
+  aud: string;
+  iat: number;
+  exp: number;
+  framework?: string;
+  intent: string;
+}
+
+export type ShieldAction = 'ALLOW' | 'BLOCK_RATE_LIMIT' | 'BLOCK_INVALID_SIGNATURE' | 'BLOCK_THROUGHPUT_LOW' | 'BLOCK_PAYLOAD_TOO_LARGE' | 'BLOCK_SCHEMA_MISMATCH';
+
+export interface ShieldEvaluation {
+  action: ShieldAction;
+  passport?: AgentPassport; 
+  reason?: string;          
+  latencyMs: number;        
 }
 
 // Global in-memory statistics tracking
@@ -128,7 +180,7 @@ export function loadJinJson(cwd: string = process.cwd()): any | null {
 }
 
 /**
- * Decodes base64url encoded parts of a JWT.
+ * Decode base64url encoded parts of a JWT.
  */
 export function decodeJwt(token: string) {
   const parts = token.split('.');
@@ -281,6 +333,304 @@ export async function verifyJinToken(
 
   } catch (err: any) {
     return { success: false, error: `Identity verification failed: ${err.message}` };
+  }
+}
+
+// ============================================================================
+// CORE JIN SHIELD IMPLEMENTATION
+// ============================================================================
+export class JinShield {
+  private jwksClient!: jwksRsa.JwksClient;
+
+  constructor(private options: JinShieldOptions) {
+    this.initJwksClient();
+  }
+
+  /**
+   * Initializes the cached and rate-limited JWKS client.
+   */
+  private initJwksClient(): void {
+    this.jwksClient = jwksRsa({
+      jwksUri: this.options.jwksUri,
+      cache: true,
+      cacheMaxEntries: 100,
+      cacheMaxAge: 24 * 60 * 60 * 1000, // Cache for 24 hours locally
+      rateLimit: true,
+      jwksRequestsPerMinute: 10,
+    });
+  }
+
+  /**
+   * Safe promisified wrapper to retrieve the signing public key for a key ID.
+   */
+  private getSigningKey(kid: string): Promise<jwksRsa.SigningKey> {
+    return new Promise((resolve, reject) => {
+      this.jwksClient.getSigningKey(kid, (err, key) => {
+        if (err) {
+          reject(err);
+        } else if (!key) {
+          reject(new Error('Signing key not found'));
+        } else {
+          resolve(key);
+        }
+      });
+    });
+  }
+
+  /**
+   * Fires the onThreatDetected callback asynchronously so it doesn't block the event loop.
+   */
+  private fireSnitch(
+    violationType: ViolationType,
+    ipAddress: string,
+    userAgent: string,
+    reason: string,
+    parsedPayload?: any
+  ): void {
+    if (this.options.onThreatDetected) {
+      const intel: ThreatIntel = {
+        timestamp: Date.now(),
+        violationType,
+        ipAddress,
+        userAgent,
+        agentId: parsedPayload?.sub,
+        framework: parsedPayload?.framework,
+        metadata: {
+          reason,
+          ...(parsedPayload ? { payload: parsedPayload } : {})
+        }
+      };
+
+      // Fired asynchronously (snitch is non-blocking)
+      Promise.resolve().then(async () => {
+        try {
+          await this.options.onThreatDetected!(intel);
+        } catch (err) {
+          console.error('[Jin Shield] Error inside onThreatDetected callback:', err);
+        }
+      });
+    }
+  }
+
+  /**
+   * Evaluates the request against the Layer-7 security boundary, returning a ShieldEvaluation.
+   */
+  public async evaluateRequest(req: any): Promise<ShieldEvaluation> {
+    const startTime = performance.now();
+
+    const getLatency = () => performance.now() - startTime;
+
+    // Safely resolve request headers and metadata
+    const headers = req?.headers || {};
+    const userAgent = headers['user-agent'] || headers['User-Agent'] || 'unknown';
+    const ipAddress = headers['x-forwarded-for'] || req?.ip || req?.socket?.remoteAddress || '127.0.0.1';
+
+    try {
+      // 1. Content size limits enforcement
+      const contentLengthHeader = headers['content-length'] || headers['Content-Length'];
+      if (contentLengthHeader) {
+        const contentLength = parseInt(contentLengthHeader as string, 10);
+        if (!isNaN(contentLength) && contentLength > this.options.security.maxPayloadSizeBytes) {
+          this.fireSnitch(
+            'PAYLOAD_TOO_LARGE',
+            ipAddress,
+            userAgent,
+            `Payload size of ${contentLength} bytes exceeds configured max limit of ${this.options.security.maxPayloadSizeBytes} bytes`
+          );
+          return {
+            action: 'BLOCK_PAYLOAD_TOO_LARGE',
+            reason: 'Payload too large',
+            latencyMs: getLatency()
+          };
+        }
+      }
+
+      // 2. Existence of authorization header
+      const authHeader = headers['authorization'] || headers['Authorization'];
+      if (!authHeader || typeof authHeader !== 'string') {
+        this.fireSnitch(
+          'INVALID_SIGNATURE',
+          ipAddress,
+          userAgent,
+          'Missing Authorization header'
+        );
+        return {
+          action: 'BLOCK_INVALID_SIGNATURE',
+          reason: 'Missing Authorization header',
+          latencyMs: getLatency()
+        };
+      }
+
+      // 3. Extract Bearer or Jin-Identity token
+      let token = '';
+      if (authHeader.startsWith('Bearer ')) {
+        token = authHeader.substring(7).trim();
+      } else if (authHeader.startsWith('Jin-Identity ')) {
+        token = authHeader.substring(13).trim();
+      } else {
+        token = authHeader.trim();
+      }
+
+      if (!token) {
+        this.fireSnitch(
+          'INVALID_SIGNATURE',
+          ipAddress,
+          userAgent,
+          'Empty Authorization token'
+        );
+        return {
+          action: 'BLOCK_INVALID_SIGNATURE',
+          reason: 'Empty Authorization token',
+          latencyMs: getLatency()
+        };
+      }
+
+      // 4. Decode JWT structure to read kid from unverified header for key lookup
+      let unverifiedPayload: any = null;
+      let kid: string | undefined;
+      let headerAlg: string | undefined;
+
+      try {
+        const decoded = jwt.decode(token, { complete: true });
+        if (decoded && typeof decoded === 'object') {
+          unverifiedPayload = decoded.payload;
+          kid = decoded.header.kid;
+          headerAlg = decoded.header.alg;
+        }
+      } catch (err: any) {
+        this.fireSnitch(
+          'INVALID_SIGNATURE',
+          ipAddress,
+          userAgent,
+          `Failed to decode JWT: ${err.message}`
+        );
+        return {
+          action: 'BLOCK_INVALID_SIGNATURE',
+          reason: 'Malformed JWT format',
+          latencyMs: getLatency()
+        };
+      }
+
+      if (!kid) {
+        this.fireSnitch(
+          'INVALID_SIGNATURE',
+          ipAddress,
+          userAgent,
+          'Missing key ID (kid) in token header',
+          unverifiedPayload
+        );
+        return {
+          action: 'BLOCK_INVALID_SIGNATURE',
+          reason: 'Missing kid in token header',
+          latencyMs: getLatency()
+        };
+      }
+
+      if (headerAlg !== 'RS256') {
+        this.fireSnitch(
+          'INVALID_SIGNATURE',
+          ipAddress,
+          userAgent,
+          `Unsupported cryptographic algorithm: ${headerAlg || 'none'}. RS256 is required.`,
+          unverifiedPayload
+        );
+        return {
+          action: 'BLOCK_INVALID_SIGNATURE',
+          reason: 'Unsupported token algorithm',
+          latencyMs: getLatency()
+        };
+      }
+
+      // 5. Retrieve key from cached JWKS client (guarantees zero network hops on subsequent requests)
+      let publicKey: string;
+      try {
+        const key = await this.getSigningKey(kid);
+        publicKey = key.getPublicKey();
+      } catch (err: any) {
+        this.fireSnitch(
+          'INVALID_SIGNATURE',
+          ipAddress,
+          userAgent,
+          `Failed to retrieve JWKS key for kid "${kid}": ${err.message}`,
+          unverifiedPayload
+        );
+        return {
+          action: 'BLOCK_INVALID_SIGNATURE',
+          reason: 'Unrecognized key identifier',
+          latencyMs: getLatency()
+        };
+      }
+
+      // 6. Cryptographically verify the RS256 signature using the cached public key
+      let verifiedPayload: any;
+      try {
+        verifiedPayload = jwt.verify(token, publicKey, {
+          audience: this.options.audience,
+          algorithms: ['RS256']
+        });
+      } catch (err: any) {
+        this.fireSnitch(
+          'INVALID_SIGNATURE',
+          ipAddress,
+          userAgent,
+          `Token signature or claim verification failed: ${err.message}`,
+          unverifiedPayload
+        );
+        return {
+          action: 'BLOCK_INVALID_SIGNATURE',
+          reason: `Invalid token: ${err.message}`,
+          latencyMs: getLatency()
+        };
+      }
+
+      // 7. Verify issuer
+      const iss = verifiedPayload.iss;
+      if (iss !== 'meetjin.com' && iss !== 'https://meetjin.com') {
+        this.fireSnitch(
+          'INVALID_SIGNATURE',
+          ipAddress,
+          userAgent,
+          `Untrusted token issuer: ${iss}`,
+          verifiedPayload
+        );
+        return {
+          action: 'BLOCK_INVALID_SIGNATURE',
+          reason: 'Untrusted token issuer',
+          latencyMs: getLatency()
+        };
+      }
+
+      // 8. Map verified token payload to AgentPassport structure
+      const passport: AgentPassport = {
+        jti: verifiedPayload.jti,
+        sub: verifiedPayload.sub,
+        iss: verifiedPayload.iss,
+        aud: verifiedPayload.aud,
+        iat: verifiedPayload.iat,
+        exp: verifiedPayload.exp,
+        framework: verifiedPayload.framework,
+        intent: verifiedPayload.intent || verifiedPayload.intent_id || ''
+      };
+
+      return {
+        action: 'ALLOW',
+        passport,
+        latencyMs: getLatency()
+      };
+
+    } catch (err: any) {
+      this.fireSnitch(
+        'INVALID_SIGNATURE',
+        ipAddress,
+        userAgent,
+        `Unexpected error during request evaluation: ${err.message}`
+      );
+      return {
+        action: 'BLOCK_INVALID_SIGNATURE',
+        reason: `Request evaluation failed: ${err.message}`,
+        latencyMs: getLatency()
+      };
+    }
   }
 }
 

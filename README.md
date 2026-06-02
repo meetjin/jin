@@ -43,11 +43,13 @@ This file — `jin.json` — is to AI agents what `sitemap.xml` is to search eng
 
 ---
 
-## 🚀 New in v0.2.3
+## 🚀 New in v0.2.4
 
-Version `0.2.3` is an all-inclusive framework and security update adding the **Jin Shield** cryptographic gateway boundary, support for ten major backend ecosystems, deep OpenAPI spec crawlers, and advanced parameter normalizations:
+Version `0.2.4` introduces the production-ready `JinShield` cryptographic gateway core class and async telemetry system in TypeScript:
 
-* **🛡️ Universal Jin Shield Security Perimeter**: Active gateway boundary protecting your endpoints against rogue scrapers. Auto-scans your workspace to generate zero-hop, in-memory RS256 token verification middlewares and guards for Express, Next.js, Hono, Fastify, NestJS, tRPC, FastAPI, Django, Flask, Laravel, and Rails.
+* **🛡️ Production-Ready JinShield Class**: Active gateway boundary protecting your endpoints against rogue scrapers. Provides cached, in-memory RS256 token verification, payload size boundary checks, and asynchronous non-blocking threat reporting.
+* **🔑 Zero-Hop Asymmetric Verification**: Utilizes `jwks-rsa` local public key caching to guarantee zero external network hops on active request evaluations.
+* **⚡ Asynchronous Threat Telemetry**: Triggers threat reporting snitch callbacks asynchronously out-of-band to maintain sub-millisecond execution times.
 * **10 New Framework Scanners**: Out-of-the-box static route extraction for **FastAPI**, **Django REST Framework**, **Flask**, **Laravel**, **Ruby on Rails**, **Fastify**, **Hono**, **NestJS**, **tRPC**, and **OpenAPI**.
 * **Stateful Lexical Router Traversal**: Recursively traverses multi-level nested routers (like in tRPC) to generate unified dot-notation endpoint schemas (`/api/trpc/posts.create`).
 * **Recursive Workspace OpenAPI Spec Discoverer**: Deep crawls your workspace recursively to automatically discover and import OpenAPI/Swagger configurations for any other backend stacks.
@@ -344,7 +346,7 @@ Jin is designed to replace hostile, brute-force web scraping platforms with a co
 v0.1              Core spec, CLI, registry, explore page
 v0.2              Next-Gen backend framework support (10+ scanners)
                   Recursive workspace OpenAPI spec discoverer
-v0.2.3 (now)      @papercargo/jin-shield — scraper protection (asymmetric RS256 JWT, zero-hop)
+v0.2.4 (now)      @papercargo/jin-shield — Production-ready JinShield class and async telemetry
 v0.3 (Month 3)    Streaming intents, multi-step flows
                   Key Protocol — cryptographic agent sessions
 v1.0 (2027)       Stable spec — no breaking changes
