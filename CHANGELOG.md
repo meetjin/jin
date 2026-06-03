@@ -2,6 +2,15 @@
 
 All notable changes to `@papercargo/jin-cli` will be documented in this file.
 
+## [0.2.5] — 2026-06-03
+
+### Changed
+- Complete overhaul of README.md for Hacker News (Show HN) release.
+- Re-styled documentation tone to be clean, technical, and developer-friendly (removed VC/marketing buzzwords).
+- Added comprehensive section on "Working Principles & Security Architecture" for Jin Shield (local verification, JWKS caching, zero telemetry, and async callback).
+- Swapped default README logo to `logo Jin.png`.
+- Bumped project version to `v0.2.5` across CLI, package.json, and documentation.
+
 ## [0.2.4] — 2026-06-02
 
 ### Added

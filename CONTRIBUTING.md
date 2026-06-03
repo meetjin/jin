@@ -1,6 +1,6 @@
 # Contributing to Jin
 
-Thanks for your interest in contributing to Jin and the Agent Intent Protocol (AIP).
+Thanks for your interest in contributing to Jin and the Agent Intent Protocol (AIP) (v0.2.5+).
 
 ## Ways to contribute
 

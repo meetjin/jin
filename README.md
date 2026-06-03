@@ -1,11 +1,10 @@
 <div align="center">
 
-<img src="logo_readme.png" alt="Jin" width="120" />
+<img src="logo Jin.png" alt="Jin" width="120" />
 
 # Jin
 
-### The open infrastructure standard for the agentic web. 
-**A dual-sided protocol for machine-readable routing (`jin.json`) and zero-latency perimeter security.**
+### Machine-readable API mapping (`jin.json`) and zero-latency gateway security for AI agents.
 
 [![npm downloads](https://img.shields.io/npm/dw/@papercargo/jin-cli?style=flat-square&color=emerald)](https://www.npmjs.com/package/@papercargo/jin-cli)
 [![AIP Version](https://img.shields.io/badge/AIP-v0.1%20Open%20Draft-6366f1?style=flat-square)](https://meetjin.com/spec)
@@ -19,123 +18,146 @@
 
 ---
 
-## The problem
+## What is Jin?
 
-Every website was built for human eyes — menus, buttons, pagination, login walls. AI agents trying to interact with them are forced to scrape HTML, simulate clicks, and break every time a class name changes.
+Jin is a standard and tooling layer for connecting web applications to AI agents. It consists of two parts:
 
-There is no standard way for an app to say *"here is what I can do and how you can do it."*
-
-Until now.
-
----
-
-## What Jin does
-
-Jin introduces the **Agent Intent Protocol (AIP)** — a lightweight open standard that gives any web application a machine-readable intent layer.
-
-One JSON file. One well-known URL. Any agent can find your app, understand its capabilities, and execute actions without scraping a single pixel.
-
-```
-https://yourapp.com/.well-known/jin.json
-```
-
-This file — `jin.json` — is to AI agents what `sitemap.xml` is to search engines. It declares what your app can *do*, not just what pages it *has*.
+1. **Agent Intent Protocol (AIP)**: An open standard (`jin.json` hosted at `/.well-known/jin.json`) that maps your application's endpoints to natural language triggers, categories, and schemas. It serves as a machine-readable directory (`sitemap.xml`) for agents to find, understand, and execute actions on your API without fragile web scraping.
+2. **Jin Shield**: A lightweight, zero-latency security gateway middleware. It intercepts agent traffic and validates asymmetric cryptographic passports (issued by the registry) locally in-memory, blocking unauthorized scrapers and malformed requests before they hit your application logic.
 
 ---
 
-## 🚀 New in v0.2.4
+## 🚀 New in v0.2.5
 
-Version `0.2.4` introduces the production-ready `JinShield` cryptographic gateway core class and async telemetry system in TypeScript:
+Version `0.2.5` introduces production-ready middleware integration, async telemetry events, and expanded scanner support:
 
-* **🛡️ Production-Ready JinShield Class**: Active gateway boundary protecting your endpoints against rogue scrapers. Provides cached, in-memory RS256 token verification, payload size boundary checks, and asynchronous non-blocking threat reporting.
-* **🔑 Zero-Hop Asymmetric Verification**: Utilizes `jwks-rsa` local public key caching to guarantee zero external network hops on active request evaluations.
-* **⚡ Asynchronous Threat Telemetry**: Triggers threat reporting snitch callbacks asynchronously out-of-band to maintain sub-millisecond execution times.
+* **🛡️ Production-Ready JinShield Class**: Active gateway boundary protecting your endpoints. Provides cached, in-memory RS256 token verification, payload size boundary checks, and asynchronous non-blocking threat reporting.
+* **🔑 Zero-Hop Asymmetric Verification**: Utilizes local public key caching to guarantee zero external network hops on active request evaluations.
+* **⚡ Asynchronous Threat Telemetry**: Triggers threat reporting callbacks asynchronously out-of-band to maintain sub-millisecond execution times.
 * **10 New Framework Scanners**: Out-of-the-box static route extraction for **FastAPI**, **Django REST Framework**, **Flask**, **Laravel**, **Ruby on Rails**, **Fastify**, **Hono**, **NestJS**, **tRPC**, and **OpenAPI**.
 * **Stateful Lexical Router Traversal**: Recursively traverses multi-level nested routers (like in tRPC) to generate unified dot-notation endpoint schemas (`/api/trpc/posts.create`).
-* **Recursive Workspace OpenAPI Spec Discoverer**: Deep crawls your workspace recursively to automatically discover and import OpenAPI/Swagger configurations for any other backend stacks.
-* **Advanced Parameter Normalization**: Automatically converts and maps complex path signatures (including typed path variables, catch-alls, regex filters, and optional parameters) to standard AIP-compliant formats.
+* **Recursive Workspace OpenAPI Spec Discoverer**: Recursively crawls your workspace to discover and import OpenAPI/Swagger configurations for other backend stacks automatically.
+* **Advanced Parameter Normalization**: Automatically converts paths (typed parameters, catch-alls, regex filters, and optional parameters) into standard AIP formats.
 
 ---
 
-## Get started in 3 minutes
+## The Problem
 
+Websites and APIs are designed for human consumption or developer integrations. When an AI agent tries to interact with a web page, it is forced to scrape HTML, parse DOM trees, and simulate button clicks. This process is:
+* **Fragile**: Any UI or CSS class change breaks the agent's scripts.
+* **Expensive**: LLMs waste thousands of context tokens reading unformatted HTML and boilerplate page assets.
+* **Taxing**: High-frequency web scraping puts heavy load on web servers.
+
+Jin solves this by providing a clean, machine-readable definition of what your application can do, how parameters should be passed, and what natural language queries map to those actions.
+
+---
+
+## Get Started in 3 Minutes
+
+### 1. Initialize the Intent Map
+Run the init command inside your project directory. The CLI will scan your codebase, identify your routes/endpoints (supporting Next.js, Express, FastAPI, Django, Laravel, and more), and generate a `jin.json` scaffold:
 ```bash
-# 1. Generate your intent map
 npx @papercargo/jin-cli init
-
-# 2. Review and add natural language descriptions
-# Edit jin.json — fill in the triggers and descriptions
-
-# 3. Validate
-npx @papercargo/jin-cli validate
-
-# 4. Activate the security shield
-npx @papercargo/jin-cli shield
-
-# 5. Publish to the registry
-npx @papercargo/jin-cli publish
 ```
 
-Your app is now cryptographically secured and discoverable by every compliant AI agent in the world.
+### 2. Review Triggers & Descriptions
+Open the generated `jin.json` file. Fill in descriptions and natural language trigger phrases for the endpoints you want agents to discover:
+```json
+"triggers": [
+  "find a product",
+  "search for items in store",
+  "I want to buy something"
+]
+```
+
+### 3. Validate Against Spec
+Verify that your file conforms to the AIP JSON schema specification:
+```bash
+npx @papercargo/jin-cli validate
+```
+
+### 4. Deploy and Publish
+Publish the intent map to the public registry. This enables compliant agents to discover your API's capabilities dynamically:
+```bash
+npx @papercargo/jin-cli publish
+```
 
 ---
 
 ## 🛡️ Jin Shield Security Perimeter
 
-### The "Take It or Leave It" Boundary
-Jin Shield flips the scraping paradigm by enforcing a strict protocol boundary before requests ever touch your controllers.
+Once you declare your API capabilities, you can activate the **Jin Shield** trust perimeter to protect your backend endpoints. It checks incoming traffic, validates agent identity tokens, and blocks unverified crawlers or rogue scrapers with an HTTP `403 Forbidden` response.
 
 ```text
 [ Incoming Request ]
          │
          ▼
  ┌───────────────┐
- │  Jin Shield   │ ◄─── Cross-references JWKS public keys in-memory
+ │  Jin Shield   │ ◄─── Validates JWT against cached JWKS keys in-memory
  └───────┬───────┘
          │
-         ├─► [ Verified Jin Agent ] ──► (200 OK) Native millisecond execution
+         ├─► [ Verified Agent ]   ──► (200 OK) Native Execution
          │
-         └─► [ Unverified Scraper ] ──► (403 Forbidden) "Read jin.json or leave."
+         └─► [ Rogue Scraper ]    ──► (403 Forbidden) "Access Denied. Refer to jin.json"
 ```
-[Test A] Simulating Rogue Scraper hitting protected route...
-✓ [Test A SUCCESS] Scraper blocked immediately by Jin Shield gateway boundary!
 
-[Test B] Simulating verified Jin Agent with cryptographic passport...
-✓ [Test B SUCCESS] Verified Jin Agent passed cryptographic check and accessed route!
+### Working Principles & Security Architecture
 
-Once you have declared your app capabilities, you can activate the **Jin Shield** trust perimeter to protect your backend gateway. It intercepts incoming traffic, verifies cryptographic agent passports, and blocks rogue, non-compliant scrapers while passing verified AI agents that match your local `jin.json` specification.
+* **Strictly Local In-Memory Verification**: The middleware performs cryptographic RS256 signature verification of the `Jin-Identity` authorization token locally. It does not query external databases or make third-party API calls during request processing, maintaining sub-millisecond overhead.
+* **No Telemetry / No "Calling Home"**: The middleware does not transmit request details, IP addresses, or agent metadata back to `meetjin.com` or any centralized server during verification.
+* **JWKS Key Caching**: Public verification keys are retrieved from `meetjin.com` (or your configured custom registry) once at server startup. If a token arrives with an unrecognized Key ID (`kid`) due to key rotation, the shield invalidates the local cache and fetches the updated JWKS keys exactly once to prevent downtime.
+* **Async Threat Monitoring Callback**: You can supply an `onThreatDetected` callback. When an invalid signature, payload boundary violation, or mismatched intent is detected, the shield reports a `ThreatIntel` log asynchronously out-of-band, allowing you to log details or feed them to your log aggregator without impacting response latencies.
 
-### Key Features:
-* **🛡️ Decentralized IdP Pattern (Strictly Local Verification)**: The shield never makes database queries or external network hops to check a developer's API key. It strictly validates RS256 JWT agent passports locally in-memory using cached Public Keys.
-* **🔑 In-Memory JWKS Caching & Automatic Key Rotation**: JWKS public keys are fetched from `meetjin.com` once on server boot and cached in-memory. If a key ID (`kid`) is not recognized in the local cache, the shield briefly re-fetches the JWKS keys automatically to handle rotated keys without downtime.
-* **⚡ Cryptographically Hardened Engines**: Fully integrated with industry-standard, high-performance packages:
-  * **TypeScript/Node**: Leverages `jsonwebtoken` for secure cryptographic checks.
-  * **Python**: Uses `PyJWT` and `PyJWKClient` for automatic, highly optimized key caching and validation.
-* **🎯 Exact Intent Routing**: Decodes agent identity tokens and asserts that the `intent_id` claim matches the requested path and method declared in your local `jin.json` route map.
-* **12 Framework Adapters**: The CLI automatically scans your project and generates self-contained native adapters for:
-  * **JavaScript/TypeScript**: Express, Next.js (App & Pages Routers), Hono, Fastify, NestJS Guards, and tRPC.
-  * **Python**: FastAPI, Flask, and Django.
-  * **Enterprise Blueprints**: PHP Laravel and Ruby on Rails.
-* **📊 In-Memory Metrics**: Track active and total execution request counters with zero overhead.
-* **🚪 Strict Fallback Boundary**: Short-circuits unauthorized agent hits or rogue scrapers with an HTTP `403 Forbidden` response immediately, pointing them to `/.well-known/jin.json` ("take it or leave it").
+### Setup Examples
 
-To activate the shield inside your codebase:
-```bash
-npx @papercargo/jin-cli shield
+#### Node (Express)
+```typescript
+import express from 'express';
+import { expressAdapter } from '@papercargo/jin-cli/dist/crypto/jin_core';
+
+const app = express();
+
+// Protects all endpoints listed in your jin.json automatically
+app.use(expressAdapter({
+  cwd: process.cwd()
+}));
+
+app.get('/api/products', (req, res) => {
+  res.json({ message: "Access granted to verified agent." });
+});
+
+app.listen(3000);
 ```
-Follow the generated framework-specific setup logs to wire it up!
+
+#### Python (FastAPI)
+```python
+from fastapi import FastAPI
+from jin_core import JinShieldMiddleware
+
+app = FastAPI()
+
+# Mount the ASGI middleware to protect declared routes
+app.add_middleware(
+    JinShieldMiddleware,
+    cwd="."
+)
+
+@app.get("/api/products")
+def search_products(query: str):
+    return {"message": f"Results for: {query}"}
+```
 
 ---
 
-## What jin.json looks like
+## What `jin.json` Looks Like
 
 ```json
 {
   "aip_version": "0.1",
   "app": {
-    "name": "My App",
-    "description": "What my app does in plain language",
-    "url": "https://myapp.com"
+    "name": "E-Commerce API",
+    "description": "API for product lookup and checkout flow",
+    "url": "https://api.example.com"
   },
   "auth": {
     "type": "bearer"
@@ -144,12 +166,11 @@ Follow the generated framework-specific setup logs to wire it up!
     {
       "id": "search_products",
       "name": "Search Products",
-      "description": "Search for products by keyword or category",
+      "description": "Lookup products by text query and category filters",
       "triggers": [
         "find a product",
         "search for something to buy",
-        "show me products",
-        "I need to find X"
+        "show me products"
       ],
       "category": "commerce",
       "method": "GET",
@@ -157,12 +178,12 @@ Follow the generated framework-specific setup logs to wire it up!
       "parameters": {
         "query": {
           "type": "string",
-          "description": "Search term",
+          "description": "Keyword search term",
           "required": true
         },
         "category": {
           "type": "string",
-          "description": "Product category filter",
+          "description": "Optional category filter",
           "required": false
         }
       },
@@ -171,238 +192,139 @@ Follow the generated framework-specific setup logs to wire it up!
       "confirmation_required": false
     }
   ],
-  "published": "2026-05-20T00:00:00Z"
+  "published": "2026-06-03T10:00:00Z"
 }
 ```
 
 ---
 
-## How agents use it
+## How Agents Use It
+
+Compliant agents query the registry dynamically or fetch your well-known manifest directly to resolve execution parameters:
 
 ```javascript
-// 1. Discover apps by intent
+// 1. Discover app endpoints by matching natural language intent
 const results = await fetch(
   'https://meetjin.com/api/v1/registry/search?q=search+for+products'
-)
+).then(r => r.json());
 
-// 2. Fetch the intent map
+// 2. Fetch the target application's intent map
 const intentMap = await fetch(
-  'https://myapp.com/.well-known/jin.json'
-).then(r => r.json())
+  'https://api.example.com/.well-known/jin.json'
+).then(r => r.json());
 
-// 3. Match user request to intent
-const intent = intentMap.intents.find(i => i.id === 'search_products')
+// 3. Select the matching intent from the intents array
+const intent = intentMap.intents.find(i => i.id === 'search_products');
 
-// 4. Execute
+// 4. Execute the call directly using standard schema parameter resolution
 const response = await fetch(
   `${intentMap.app.url}${intent.endpoint}?query=laptop`,
-  { headers: { Authorization: `Bearer ${token}` } }
-)
-
-// Done. No scraping. No brittle selectors.
-// No Terms of Service violations.
+  { 
+    headers: { 
+      'Authorization': `Bearer ${token}` 
+    } 
+  }
+).then(r => r.json());
 ```
-
----
-
-## The registry
-
-The **meetjin.com registry** is a public, searchable index of every app that has published a `jin.json`.
-
-```bash
-# Search by intent
-GET https://meetjin.com/api/v1/registry/search?q=book+a+hotel
-
-# List all apps
-GET https://meetjin.com/api/v1/registry/apps
-
-# Get app details + intents
-GET https://meetjin.com/api/v1/registry/apps/:slug
-```
-
-No auth required. Any agent can query it.
-
-**[Browse the registry →](https://meetjin.com/registry)**
-
----
-
-## Try it live
-
-Test 20 real APIs with their AIP intent maps at **[meetjin.com/explore](https://meetjin.com/explore)**
-
-```
-🌤 Open-Meteo      Live weather data — no key required
-🚀 NASA APOD       Astronomy picture of the day
-⚡ PokeAPI         Pokémon data
-🧪 JSONPlaceholder Fake REST API for testing
-🌍 REST Countries  Country data and statistics
-₿  CoinDesk        Live Bitcoin price
-🍽 TheMealDB       Recipe search
-+ 13 more
-```
-
----
-
-## CLI reference
-
-| Command | Description |
-|---------|-------------|
-| `jin init` | Scan codebase, generate `jin.json` scaffold |
-| `jin validate` | Validate against AIP spec |
-| `jin serve` | Serve locally at `/.well-known/jin.json` |
-| `jin shield` | Activate the universal Jin Shield security perimeter |
-| `jin publish` | Deploy and register with meetjin.com |
-
-### Framework support
-
-| Framework | Status | Notes |
-|-----------|--------|-------|
-| Next.js (App + Pages Router) | ✅ Supported | Full dynamic route normalization |
-| React Router (Vite) | ✅ Supported | Client-side routing extraction |
-| Express | ✅ Supported | Verb and route matcher extraction |
-| Supabase Edge Functions | ✅ Supported | Edge-native handler scanning |
-| FastAPI (Python) | ✅ Supported | Normalizes typed parameters & catch-alls |
-| Django REST Framework | ✅ Supported | URL paths, `re_path` regexes, and ViewSet routers |
-| Flask (Python) | ✅ Supported | Supports methods lists & verb shortcuts |
-| Laravel (PHP) | ✅ Supported | Direct web/api PHP routes and optional arguments |
-| Ruby on Rails | ✅ Supported | Direct endpoints & resources macros |
-| Fastify (Node) | ✅ Supported | Verbs and explicit `.route` object configuration blocks |
-| Hono (Edge/TS) | ✅ Supported | Removes inline parameter constraint filters |
-| NestJS (Enterprise) | ✅ Supported | Class prefix + method decorators matching |
-| tRPC (TS-Native) | ✅ Supported | Recursive nested router traversal |
-| OpenAPI/Swagger | ✅ Supported | **Recursive spec finder** covering other architectures |
-
----
-
-## Category taxonomy
-
-Intent categories for registry discovery:
-
-| Category | Description |
-|----------|-------------|
-| `commerce` | Buying, selling, inventory |
-| `travel` | Booking, itineraries, transport |
-| `productivity` | Calendar, tasks, notes |
-| `communication` | Email, messaging, notifications |
-| `finance` | Payments, accounts, invoices |
-| `identity` | Auth, profiles, verification |
-| `healthcare` | Appointments, records |
-| `legal` | Contracts, compliance, documents |
-| `government` | Applications, permits, filings |
-| `education` | Courses, content, progress |
-| `media` | Search, playback, recommendations |
-| `developer` | APIs, code, deployments |
-| `data` | Search, query, analytics |
-| `social` | Profiles, posts, feeds |
-| `local` | Businesses, locations, reviews |
-
----
-
-## The spec
-
-The **Agent Intent Protocol** specification is licensed **CC0 — public domain**.
-
-No permission needed. No attribution required. Implement it, fork it, build on it.
-
-**[Read the full spec →](https://meetjin.com/spec)**
-
-The spec covers:
-- `jin.json` schema and field definitions
-- Discovery URL convention (`/.well-known/jin.json`)
-- Authentication patterns
-- Intent categories and taxonomy
-- Versioning and evolution
-- Security considerations
-- Agent integration guide
 
 ---
 
 ## Why AIP instead of OpenAPI?
 
-| | OpenAPI | AIP |
-|---|---------|-----|
-| Designed for | Human developers reading docs | AI agents executing tasks |
-| Discovery | Manual, no standard URL | `/.well-known/jin.json` — universal |
-| Natural language | ❌ | ✅ Triggers for intent matching |
-| Registry | ❌ | ✅ meetjin.com — searchable |
-| Setup time | Hours | Minutes |
-| Agent-optimised | ❌ | ✅ |
+| Feature | OpenAPI | AIP |
+| :--- | :--- | :--- |
+| **Primary Audience** | Human developers reading docs | AI agents executing tasks |
+| **Discovery Path** | Manual, undocumented URLs | Standardized `/.well-known/jin.json` URL |
+| **Matching Logic** | Path-based routing / HTTP verbs | Semantic natural language `triggers` |
+| **Registry Integration** | Not natively supported | Searchable index out-of-the-box (`meetjin.com`) |
+| **Setup Time** | Hours to configure and generate | Minutes via automatic codebase scanners |
+| **Security Layer** | Relies on manual key creation | Standardized asymmetric agent passport checks |
 
-AIP is not a replacement for OpenAPI. It is a companion standard — optimised for machine consumption, natural language matching, and agent discovery.
-
----
-
-## The Sovereign Agentic Economy (Why we are building this)
-
-Jin is designed to replace hostile, brute-force web scraping platforms with a cooperative, high-speed economic standard.
-
-1. **Webmaster Sovereignty:** For years, websites have been forced to fight AI scrapers draining their servers. Jin gives webmasters their power back. With `jin shield`, you dictate exactly what AI agents can see and do. If it isn't in your `jin.json`, it doesn't exist to the bot.
-2. **Agentic Determinism:** LLMs naturally prefer the path of least compute. By providing a clean `jin.json` map, AI swarms bypass heavy, hallucination-prone DOM scraping and execute deterministic API calls in milliseconds.
-3. **Layer 4 Settlement (Upcoming):** Jin is laying the groundwork for decentralized API monetization. Soon, webmasters will be able to gate premium endpoints in their `jin.json`, allowing verified agents to natively pay micro-transactions for data access. No middlemen, no expensive scraping platform subscriptions—just direct machine-to-machine commerce.
-
-## Roadmap
-
-```
-v0.1              Core spec, CLI, registry, explore page
-v0.2              Next-Gen backend framework support (10+ scanners)
-                  Recursive workspace OpenAPI spec discoverer
-v0.2.4 (now)      @papercargo/jin-shield — Production-ready JinShield class and async telemetry
-v0.3 (Month 3)    Streaming intents, multi-step flows
-                  Key Protocol — cryptographic agent sessions
-v1.0 (2027)       Stable spec — no breaking changes
-                  AIP working group formally established
-                  Standards body submission
-```
+AIP is designed as a companion standard alongside OpenAPI. It simplifies API capabilities down to intent models that LLM agents can easily map to natural language queries.
 
 ---
 
-## Contributing
+## CLI Command Reference
 
-AIP gets better with more implementors. There are three ways to contribute:
-
-**1. Publish your app**
-Run `npx @papercargo/jin-cli init` and publish to the registry. Every listing makes the standard more valuable.
-
-**2. Contribute community intent maps**
-Write intent maps for apps that haven't adopted AIP natively. Browse examples at [meetjin.com/explore](https://meetjin.com/explore) and submit via PR.
-
-**3. Improve the spec**
-Open an issue describing the problem and proposed change. The spec evolves through community discussion.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+| Command | Description |
+| :--- | :--- |
+| `jin init` | Scans the local directory, detects the web framework, and writes the `jin.json` scaffold |
+| `jin validate` | Validates your local `jin.json` configuration against the AIP spec schema |
+| `jin serve` | Spins up a local server hosting the `jin.json` file at `/.well-known/jin.json` for testing |
+| `jin shield` | Scans your codebase and generates native middleware files to enforce security limits |
+| `jin publish` | Registers your verified `jin.json` map with the central index at `meetjin.com` |
 
 ---
 
-## Self-hosting
+## Codebase Framework Scanners
 
-The registry is open source. Run your own internal registry for private apps:
+The CLI checks project imports and structure to extract routes and convert parameters for:
 
+* **Next.js**: Full support for App Router & Pages Router API routes.
+* **Express**: Extracts route patterns and HTTP verbs.
+* **React Router (Vite)**: Parses client-side routing definitions.
+* **Hono**: Normalizes inline edge route parameters.
+* **Fastify**: Reads route config objects and parameters.
+* **NestJS**: Matches controller class prefixes with decorator routes.
+* **tRPC**: Recursively crawls router hierarchies to map dot-notation endpoints.
+* **FastAPI (Python)**: Maps typed parameters, defaults, and type constraints.
+* **Flask (Python)**: Resolves route rules and HTTP method matrices.
+* **Django REST Framework**: Extracts ViewSets, Routers, and regular path variables.
+* **Laravel (PHP)**: Parses web/api routes and path structures.
+* **Ruby on Rails**: Translates controller routes and Rails macro endpoints.
+* **Supabase Edge Functions**: Extracts routing paths from edge handlers.
+* **OpenAPI Specs**: Recursively discovers `openapi.json` / `swagger.yaml` specs and converts them to AIP format.
+
+---
+
+## Registry Discovery Taxonomy
+
+Categorize your intent maps under these standard keys to help agents filter capabilities:
+
+| Category | Typical Capabilities |
+| :--- | :--- |
+| `commerce` | Store inventory, buying, selling, cart management |
+| `travel` | Transport, hotel booking, itineraries |
+| `productivity` | Tasks, calendars, note taking, project boards |
+| `communication` | Emails, notifications, messaging boards |
+| `finance` | Payments, invoices, statements |
+| `identity` | Profile verification, user authentication |
+| `developer` | API management, deployment logs, coding services |
+| `data` | Analytics, custom query endpoints, reporting data |
+| `social` | User feeds, profiles, posting assets |
+| `local` | Locations, restaurant reviews, shop details |
+
+---
+
+## Contributing & Self-Hosting
+
+### Contributing
+The AIP specification is fully open. You can contribute in three ways:
+1. **Publish Intent Maps**: Run `npx @papercargo/jin-cli init` on your public apps and add them to the directory.
+2. **Contribute Community Maps**: Write and submit intent maps for public services that do not yet natively support AIP.
+3. **Enhance the Spec**: Open issues or PRs to discuss protocol changes.
+
+### Self-Hosting the Registry
+The registry server is fully open-source. To host your own private registry for internal enterprise agents:
 ```bash
-git clone https://github.com/YOUR_HANDLE/meetjin
+git clone https://github.com/meetjin/meetjin
 cd meetjin
 pnpm install
-cp .env.example .env  # add your Supabase credentials
+cp .env.example .env # Provide your database credentials
 pnpm dev
 ```
 
 ---
 
-## Built by
+## Spec & License Info
 
-Jin is a project by **[Papercargo](https://papercargo.com)** — building infrastructure for the agentic web.
-
----
-
-## License
+The Agent Intent Protocol specification is licensed under the public domain (**CC0 1.0 Universal**). You can fork, adapt, or build on it without permission or attribution requirements.
 
 | Component | License |
-|-----------|---------|
-| AIP Specification | [CC0 1.0 Universal](LICENSE-SPEC) — Public Domain |
-| `@papercargo/jin-cli` | [Apache 2.0](LICENSE) |
-| Registry (meetjin.com) | [Apache 2.0](LICENSE) |
-
-The specification is public domain. The tooling is Apache 2.0.
-Build whatever you want on top of both.
+| :--- | :--- |
+| AIP Specification | [CC0 1.0 Universal](LICENSE-SPEC) (Public Domain) |
+| `@papercargo/jin-cli` | [Apache License 2.0](LICENSE) |
+| Registry Database/Site | [Apache License 2.0](LICENSE) |
 
 ---
 
