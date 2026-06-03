@@ -1,6 +1,6 @@
 {
   "name": "@papercargo/jin-cli",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Agent Intent Protocol — make your app agent-ready in minutes",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,6 +39,7 @@
   },
   "homepage": "https://meetjin.com",
   "dependencies": {
+    "@inquirer/prompts": "^8.5.2",
     "commander": "^12.0.0"
   },
   "devDependencies": {

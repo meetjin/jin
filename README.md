@@ -27,17 +27,17 @@ Jin is a standard and tooling layer for connecting web applications to AI agents
 
 ---
 
-## 🚀 New in v0.2.5
+## 🚀 New in v0.2.6
 
-Version `0.2.5` introduces production-ready middleware integration, async telemetry events, and expanded scanner support:
+Version `0.2.6` introduces monorepo support, microservice aggregation, and interactive options:
 
-* **🛡️ Production-Ready JinShield Class**: Active gateway boundary protecting your endpoints. Provides cached, in-memory RS256 token verification, payload size boundary checks, and asynchronous non-blocking threat reporting.
+* **📦 Monorepo Workspace Auto-Discovery**: Automatically detects NPM, Yarn, or PNPM workspaces and queries subfolders to locate target applications (Next.js, Express, Hono, FastAPI, etc.).
+* **🔀 In-Memory Microservice API Gateway Aggregation**: Loop through your workspaces, specify custom gateway routing prefixes (e.g., `/api/auth`, `/web-app`), and merge all discovered intents into a single, unified root `jin.json` config in memory.
+* **💬 Interactive Prompt Flow**: Upgraded the initialization experience using `@inquirer/prompts` to guide you through project targeting and routing prefix setups.
+* **📂 Command Directory Scoping**: All commands (`init`, `validate`, `serve`, `publish`, `watch`, `shield`) now support passing an optional path argument (e.g., `npx @papercargo/jin-cli validate apps/web`) to explicitly scope operations.
+* **🛡️ Production-Ready JinShield Class**: Active gateway boundary protecting your endpoints. Provides cached, in-memory RS256 token verification, payload size boundary checks, and asynchronous threat reporting.
 * **🔑 Zero-Hop Asymmetric Verification**: Utilizes local public key caching to guarantee zero external network hops on active request evaluations.
-* **⚡ Asynchronous Threat Telemetry**: Triggers threat reporting callbacks asynchronously out-of-band to maintain sub-millisecond execution times.
-* **10 New Framework Scanners**: Out-of-the-box static route extraction for **FastAPI**, **Django REST Framework**, **Flask**, **Laravel**, **Ruby on Rails**, **Fastify**, **Hono**, **NestJS**, **tRPC**, and **OpenAPI**.
-* **Stateful Lexical Router Traversal**: Recursively traverses multi-level nested routers (like in tRPC) to generate unified dot-notation endpoint schemas (`/api/trpc/posts.create`).
-* **Recursive Workspace OpenAPI Spec Discoverer**: Recursively crawls your workspace to discover and import OpenAPI/Swagger configurations for other backend stacks automatically.
-* **Advanced Parameter Normalization**: Automatically converts paths (typed parameters, catch-alls, regex filters, and optional parameters) into standard AIP formats.
+* **12 Framework Scanners**: Out-of-the-box static route extraction for **Next.js**, **Express**, **FastAPI**, **Django REST Framework**, **Flask**, **Laravel**, **Ruby on Rails**, **Fastify**, **Hono**, **NestJS**, **tRPC**, and **OpenAPI**.
 
 ---
 
@@ -248,11 +248,12 @@ AIP is designed as a companion standard alongside OpenAPI. It simplifies API cap
 
 | Command | Description |
 | :--- | :--- |
-| `jin init` | Scans the local directory, detects the web framework, and writes the `jin.json` scaffold |
-| `jin validate` | Validates your local `jin.json` configuration against the AIP spec schema |
-| `jin serve` | Spins up a local server hosting the `jin.json` file at `/.well-known/jin.json` for testing |
-| `jin shield` | Scans your codebase and generates native middleware files to enforce security limits |
-| `jin publish` | Registers your verified `jin.json` map with the central index at `meetjin.com` |
+| `jin init [dir]` | Scans the target/local directory, detects framework type, and generates the `jin.json` scaffold |
+| `jin validate [dir]` | Validates the target `jin.json` configuration against the AIP spec schema |
+| `jin serve [dir]` | Spins up a local server hosting the `jin.json` file at `/.well-known/jin.json` for testing |
+| `jin watch [dir]` | Watches your target codebase files and updates/re-validates `jin.json` automatically |
+| `jin shield [dir]` | Scans your codebase and generates native middleware files to enforce security limits |
+| `jin publish [dir]` | Registers your verified `jin.json` map with the central index at `meetjin.com` |
 
 ---
 
