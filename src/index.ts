@@ -14,7 +14,7 @@ const program = new Command()
 program
   .name('jin')
   .description('Agent Intent Protocol — make your app agent-ready')
-  .version('0.2.6')
+  .version('0.2.7')
 
 program
   .command('init [dir]')
