@@ -64,6 +64,21 @@ node dist/index.js validate
 - Descriptive variable names
 - Keep dependencies minimal
 
+## Submitting a Pull Request
+
+1. Fork the repo
+2. Create a branch: `git checkout -b feature/your-feature-name`
+3. Make your changes
+4. Test locally: `npx @papercargo/jin-cli init` in a sample project
+5. Push and open a PR against `main`
+6. Wait for review — all PRs require approval before merging
+
+## Branch Naming
+- `feature/` — new scanners, features
+- `fix/` — bug fixes
+- `docs/` — documentation only
+- `chore/` — maintenance, dependencies
+
 ## License
 
 By contributing, you agree that your contributions will be licensed under:
